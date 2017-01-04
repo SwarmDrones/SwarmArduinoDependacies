@@ -60,7 +60,7 @@
 #define ADNS3080_RESOLUTION_1600		1600
 
 // Extended Configuration bits
-#define ADNS3080_SERIALNPU_OFF	0x02
+#define ADNS3080_SERIALNPU_OFF          0x02
 
 #define ADNS3080_FRAME_RATE_MAX         6469
 #define ADNS3080_FRAME_RATE_MIN         2000
@@ -84,6 +84,7 @@ public:
         conv_factor = 0.0F;
         radians_to_pixels = 0.0F;
     }
+    
     void updateLocation()
     {
         #if 1
@@ -96,6 +97,7 @@ public:
                 delay(1500);
         #endif
     }
+    
     void setup()
     {
         SPI.begin();
@@ -105,7 +107,8 @@ public:
         uint8_t id = spiRead(ADNS3080_PRODUCT_ID);
         if (id == ADNS3080_PRODUCT_ID_VALUE)
             Serial.printf("ADNS-3080 found: %d \n",id);
-        else {
+        else
+        {
             Serial.print(F("Could not find ADNS-3080: "));
             Serial.println(id, HEX);
             while (1);
@@ -195,7 +198,8 @@ private:
             Serial.println(F("ADNS-3080 overflow\n"));
             //goto reset;
         }
-        else if (motion & 0x80) {
+        else if (motion & 0x80)
+        {
             dx = buf[1];
             dy = buf[2];
             surfaceQuality = buf[3];
@@ -290,7 +294,7 @@ private:
     {
         // multiply this number by altitude and pixel change to get horizontal
         // move (in same units as altitude)
-        conv_factor = 0.005;// might be 0.00615
+        conv_factor = 0.00615;// might be 0.00615
            /*((1.0f / (float)(ADNS3080_PIXELS_X * AP_OPTICALFLOW_ADNS3080_SCALER_1600))
                        * 2.0f * tanf(AP_OPTICALFLOW_ADNS3080_08_FOV / 2.0f));*/
         // 0.00615
