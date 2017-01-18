@@ -11,10 +11,13 @@
 #ifndef DroneCom_h
 #define DroneCom_h
 
-#define SERIAL
+//#define PROCESSING
+#define UNITY
+
+#define SERIAL_COM
 //#define WIRELESS
 
-#ifdef SERIAL
+#ifdef SERIAL_COM
 /** @brief IMU output functions. */
 /** @brief outputs information about the sensor */
 void IMUSensorDetails(sensor_t sensor)
@@ -78,7 +81,7 @@ void localizationDebugOutput(const uint8_t& surfaceQuality, const double& iy_cm,
 }
 
 #elif WIRELESS
-
+/**@todo Mike Xbee serial print out goes here*/
 #endif
 
 #endif /* DroneCom_h */
