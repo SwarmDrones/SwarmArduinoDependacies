@@ -10,12 +10,13 @@
 
 #ifndef DroneCom_h
 #define DroneCom_h
+#include <Arduino.h>
 
-//#define PROCESSING
-#define UNITY
+#define PROCESSING
+//#define UNITY
 
-#define SERIAL_COM
-//#define WIRELESS
+//#define SERIAL_COM
+#define WIRELESS
 
 #ifdef SERIAL_COM
 /** @brief IMU output functions. */
@@ -79,9 +80,242 @@ void localizationDebugOutput(const uint8_t& surfaceQuality, const double& iy_cm,
     Serial.print("\t\t pitch: "); Serial.printf("%4f", pitch);
     Serial.println();
 }
+#endif
 
-#elif WIRELESS
+#ifdef WIRELESS
 /**@todo Mike Xbee serial print out goes here*/
+class DroneCom
+{
+ public:
+    bool msgInFlag;
+    String mIn;
+    String mOut;
+    DroneCom()
+    {
+        mIn = "";
+        mOut = "";
+        msgInFlag = false;
+        messageOut = NULL;
+        messageIn = NULL;
+    }
+    /**
+     @brief : initiates drone communication with the teensy device out to pin 1 and 0 onto the xbee module using both soft serial and hw serial. 
+    */
+    void init()
+    {
+        Serial.begin(115200);
+        Serial1.begin(115200);
+    }
+    
+    /**
+     @brief : transmit to coordinator 
+    */
+    void transmit2Coor(String message)
+    {
+        messageOut = tx_headerGen(message, message.length());
+        Serial1.write(messageOut, 18+message.length());
+        Serial1.flush();
+    }
+    
+    /**
+     @brief : receive incoming messages and parses out the address and message 
+    */
+    void updateRXMsg()
+    {
+        mIn = "";
+        while(Serial1.available())
+        {
+            mIn += Serial1.readString();
+        }
+     
+        //Serial.println(mIn);
+    
+        if(mIn.length() > 0)
+        {
+            if(verifyIncoming(mIn) == true)
+            {
+                mIn = rx_headerInter(mIn, mIn.length());
+                msgInFlag = true;
+                Serial.println(mIn);
+            }
+        }
+        
+    }
+    
+    bool checkInFlag()
+    {
+        return msgInFlag;
+    }
+    String getMessage()
+    {
+        msgInFlag = false;
+        return mIn;
+    }
+    /**
+     @brief : varifies that the full package was recieved
+    */
+    bool verifyIncoming(String header)
+    {
+        // checksum where sum is from frame type to end of rfdata
+        //Serial.println("verifyIncoming: ");
+        /*for(int i = 0; i < header.length(); i++)
+        {
+            Serial.print(header[i], HEX);
+            Serial.print(" ");
+        }*/
+        
+        uint8_t sum = 0x00;
+        //Serial.println("");
+        uint8_t checking[header.length()-3];
+        for(int i = 0; i < (header.length()-3); i++)
+        {
+                checking[i] = header[i+2];
+                //Serial.print(checking[i], HEX);
+                //Serial.print(" ");
+        }
+        //Serial.println("");
+        sum = chksum8(checking, header.length()-3);
+        uint8_t checksum = (0xFF) - (sum);
+        //Serial.print(checksum, HEX);
+        //Serial.print(" == ");
+        //Serial.print(header[header.length()-1], HEX);
+        //Serial.println("");
+        if(header[header.length()-1]== (checksum))
+        {
+            return true;
+            //Serial.println("true message");
+        }
+        else 
+        {
+            msgInFlag = false;
+            Serial.println("false message");
+            return false;
+        }
+    }
+    
+    /**
+     @brief :send orientation messages over xbee to coordinator
+    */
+    void sendOrientation(const double& roll, const double& pitch, const double& yaw)
+    {
+        String msg = "Orientation: ";
+        msg += roll;
+        msg += " ";
+        msg += pitch;
+        msg += " ";
+        msg += yaw;
+        transmit2Coor(msg);
+    }
+    
+    
+ private:
+    uint8_t* messageOut;
+    char* messageIn;
+    
+    /**
+     @brief: checksum byte for header generation
+    */
+    uint8_t chksum8(unsigned char *buff, size_t len)
+    {
+            uint8_t sum;       // nothing gained in using smaller types!
+            for ( sum = 0 ; len != 0 ; len--)
+                    sum += *(buff++);   // parenthesis not required!
+            return (uint8_t)sum;
+    }
+    
+    /**
+     @brief : generates the header to output messages in API mode. 
+    */
+    uint8_t* tx_headerGen(String message, unsigned int sizet)
+    {
+        unsigned int nBytes = 17 + sizet + 1;
+        uint8_t* header = new uint8_t[nBytes];
+        //start delimeter
+        header[0] = (uint8_t)(0x7E);
+        
+        // size of meassage is in two bytes
+        header[1] = (uint8_t)(((nBytes-4) >> 8) & 0xFF);
+        header[2] = (uint8_t)((nBytes-4) & 0xFF);
+        
+        // frame type and id
+        header[3] = (uint8_t)(0x10);
+        header[4] = (uint8_t)(0x01);
+
+        // destination address
+        for(int i = 0; i < 8; i++)
+        {
+            header[5+i] =(uint8_t)(0x00); 
+        }
+        header[13]= (uint8_t)(0xFF);
+        header[14]= (uint8_t)(0xFE);
+
+        //options
+        header[15]= (uint8_t)(0x00);
+        header[16]= (uint8_t)(0x00);
+
+        //message
+        for(int i = 0; i < sizet; i++)
+        {
+            header[17+i] = (uint8_t)message[i];
+        }
+
+        // checksum where sum is from frame type to end of rfdata
+        uint8_t sum = 0x00;
+        uint8_t checking[14+sizet];
+        for(int i = 3; i < (17+sizet); i++)
+        {
+                    checking[i-3] = header[i];
+        }
+        sum = chksum8(checking, 14 + sizet);
+        uint8_t checksum = (0xFF) - (sum);
+        header[17+sizet]= (checksum);
+        
+        return header;
+    }
+    
+    /**
+     @brief : parse headers that come in from in API mode. 
+    */
+    String rx_headerInter(String rx_message, unsigned int sizet)
+    {
+            char buf[sizet];
+            rx_message.toCharArray(buf, sizet);//getBytes(buf, sizet);
+            Serial.print("incoming RX:");
+            for(int i = 0; i < sizet; i++)
+            {
+                Serial.print(buf[i], HEX);
+                Serial.print(" ");
+            }
+            Serial.print('\t');
+            Serial.print(rx_message);
+            
+            Serial.println("");
+            const uint8_t dataLen = sizet - 11;// length of data in message
+            const uint8_t addLen = 8; // length of address
+
+            String out;
+            //out.reserve(dataLen + addLen + 1);// = new char
+
+            // parsing the address portion in the header
+            for(int i = 0; i < addLen; i++)
+            {
+                    out+= rx_message[i+2];
+            }
+            out += ':';//out[addLen] = ':';
+            // parsing the data portion of the header
+            for(int i = 0; i < dataLen; i++)
+            {
+                    out+= rx_message[i+10];//out[i + addLen] = rx_message[i+16];
+            }
+            //int total = dataLen + addLen;
+            Serial.println(out);
+            return out;
+        
+    }
+    
+    
+};
+
 #endif
 
 #endif /* DroneCom_h */
