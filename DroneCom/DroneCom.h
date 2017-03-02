@@ -136,7 +136,7 @@ class DroneCom
             {
                 mIn = rx_headerInter(mIn, mIn.length());
                 msgInFlag = true;
-                Serial.println(mIn);
+                //Serial.println(mIn);
             }
         }
         
@@ -180,7 +180,8 @@ class DroneCom
         //Serial.print(" == ");
         //Serial.print(header[header.length()-1], HEX);
         //Serial.println("");
-        if(header[header.length()-1]== (checksum))
+        uint8_t frameType = header[2];
+        if((header[header.length()-1]== checksum)&&(frameType == 0x90))// make sure both checksum and frametype agree
         {
             return true;
             //Serial.println("true message");
@@ -188,7 +189,8 @@ class DroneCom
         else 
         {
             msgInFlag = false;
-            Serial.println("false message");
+            //Serial.print("false message: ");
+            //Serial.println(frameType,HEX);
             return false;
         }
     }
@@ -207,6 +209,28 @@ class DroneCom
         transmit2Coor(msg);
     }
     
+    /**
+     @brief : send incoming to processing
+     */
+    /*
+    String incoming2Processing(String mIn)
+    {
+        String add = mIn.substring(3, 11);
+        String data = mIn.substring(13, mIn.length()-1);
+        String out2P = add + ":" + data;
+        return out2P;
+        
+    }*/
+    /**
+     @brief : transmit to drones
+     */
+    void transmit2Drone(String message)
+    {
+        messageOut = tx_headerGen(message, message.length());
+        Serial1.write(messageOut, 18+message.length());
+        Serial1.flush();
+    }
+
     
  private:
     uint8_t* messageOut;
@@ -280,18 +304,18 @@ class DroneCom
     {
             char buf[sizet];
             rx_message.toCharArray(buf, sizet);//getBytes(buf, sizet);
-            Serial.print("incoming RX:");
+            /*Serial.print("incoming RX:");
             for(int i = 0; i < sizet; i++)
             {
                 Serial.print(buf[i], HEX);
                 Serial.print(" ");
             }
-            Serial.print('\t');
-            Serial.print(rx_message);
+            //Serial.print('\t');
+            //Serial.print(rx_message);
             
-            Serial.println("");
+            Serial.println("");*/
             const uint8_t dataLen = sizet - 11;// length of data in message
-            const uint8_t addLen = 8; // length of address
+            const uint8_t addLen = 6; // length of address
 
             String out;
             //out.reserve(dataLen + addLen + 1);// = new char
@@ -299,7 +323,7 @@ class DroneCom
             // parsing the address portion in the header
             for(int i = 0; i < addLen; i++)
             {
-                    out+= rx_message[i+2];
+                    out+= rx_message[i+3];
             }
             out += ':';//out[addLen] = ':';
             // parsing the data portion of the header
@@ -308,7 +332,7 @@ class DroneCom
                     out+= rx_message[i+10];//out[i + addLen] = rx_message[i+16];
             }
             //int total = dataLen + addLen;
-            Serial.println(out);
+            //Serial.println(out);
             return out;
         
     }
