@@ -119,7 +119,7 @@ class DroneCom
         messageOut = NULL;
         messageIn = NULL;
         #ifdef DRONE
-        / coordinator sends new PID values to DRONE
+        // coordinator sends new PID values to DRONE
         PMsgIn = false;
         IMsgIn= false;
         DMsgIn = false;
@@ -150,6 +150,13 @@ class DroneCom
     void transmit2Coor(String message)
     {
         messageOut = tx_headerGen(message, message.length());
+        /*Serial.print("sending:");
+        for(int i = 0; i < message.length()+18; i++)
+        {
+            Serial.print(messageOut[i], HEX);
+            Serial.print(" ");
+        }
+        Serial.println("");*/
         Serial1.write(messageOut, 18+message.length());
         Serial1.flush();
     }
@@ -191,7 +198,7 @@ class DroneCom
     {
         mIn = "";
         Serial1.flush();
-        Serial.flush();
+        //Serial.flush();
         while(Serial1.available())
         {
             mIn += Serial1.readString();
@@ -200,254 +207,265 @@ class DroneCom
         
         if(mIn.length() > 0)
         {
-            if(verifyIncoming(mIn) == true)
+            msgInFlag = verifyIncoming(mIn);
+            if(msgInFlag == true)
             {
                 mIn = rx_headerInter(mIn, mIn.length());
-                msgInFlag = true;
+                //msgInFlag = true;
             }
-        }
-        if(msgInFlag = true)
-        {
-            String msg = mIn.substring(8);
-            Serial.println(msg);
-            char firstChar = msg[0];// this can be either a number for PID change or Dest for change in destination
-            // checking if its a PID value
-            if(firstChar == '0' || firstChar == '1' || firstChar '2')
-            {
-                DestMsgIn = false;
-                char axis = msg[0];
-                // checking which axis to change is X/Roll
-                if(firstChar == '0')
-                {
-                    RollMsgIn = true;
-                    PitchMsgIn = false;
-                    YawMsgIn = false;
-                    // checking which constant is being changed
-                    char consType = msg[1];
-                    if(consType == 'P')
-                    {
-                        PMsgIn = true;
-                        IMsgIn = false;
-                        DMsgIn = false;
-                        // checking whether is orientation or location
-                        char poseType = msg[3];
-                        if(poseType == 'p') // meaning position constant came in
-                        {
-                            PosMsgIn = true;
-                            OriMsgIn = false;
-                            
-                        }
-                        else if(poseType == 'o') // meaning orientation constant came in
-                        {
-                            OriMsgIn = true;
-                            PosMsgIn = false;
-                        }
-                    }
-                    if(consType == 'I')
-                    {
-                        IMsgIn = true;
-                        PMsgIn = false;
-                        DMsgIn = false;
-                        // checking whether is orientation or location
-                        char poseType = msg[3];
-                        if(poseType == 'p') // meaning position constant came in
-                        {
-                            PosMsgIn = true;
-                            OriMsgIn = false;
-                            
-                        }
-                        else if(poseType == 'o') // meaning orientation constant came in
-                        {
-                            OriMsgIn = true;
-                            PosMsgIn = false;
-                        }
-                    }
-                    if(consType == 'D')
-                    {
-                        DMsgIn = true;
-                        IMsgIn = false;
-                        PMsgIn = false;
-                        // checking whether is orientation or location
-                        char poseType = msg[3];
-                        if(poseType == 'p') // meaning position constant came in
-                        {
-                            PosMsgIn = true;
-                            OriMsgIn = false;
-                            
-                        }
-                        else if(poseType == 'o') // meaning orientation constant came in
-                        {
-                            OriMsgIn = true;
-                            PosMsgIn = false;
-                        }
-                    }
-                    
-                }
-                // checking which axis to change is Y/Pitch
-                if(firstChar == '1')
-                {
-                    RollMsgIn = false;
-                    PitchMsgIn = true;
-                    YawMsgIn = false;
-                    // checking which constant is being changed
-                    char consType = msg[1];
-                    if(consType == 'P')
-                    {
-                        PMsgIn = true;
-                        IMsgIn = false;
-                        DMsgIn = false;
-                        // checking whether is orientation or location
-                        char poseType = msg[3];
-                        if(poseType == 'p') // meaning position constant came in
-                        {
-                            PosMsgIn = true;
-                            OriMsgIn = false;
-                            
-                        }
-                        else if(poseType == 'o') // meaning orientation constant came in
-                        {
-                            OriMsgIn = true;
-                            PosMsgIn = false;
-                        }
-                    }
-                    if(consType == 'I')
-                    {
-                        IMsgIn = true;
-                        PMsgIn = false;
-                        DMsgIn = false;
-                        // checking whether is orientation or location
-                        char poseType = msg[3];
-                        if(poseType == 'p') // meaning position constant came in
-                        {
-                            PosMsgIn = true;
-                            OriMsgIn = false;
-                            
-                        }
-                        else if(poseType == 'o') // meaning orientation constant came in
-                        {
-                            OriMsgIn = true;
-                            PosMsgIn = false;
-                        }
-                    }
-                    if(consType == 'D')
-                    {
-                        DMsgIn = true;
-                        IMsgIn = false;
-                        PMsgIn = false;
-                        // checking whether is orientation or location
-                        char poseType = msg[3];
-                        if(poseType == 'p') // meaning position constant came in
-                        {
-                            PosMsgIn = true;
-                            OriMsgIn = false;
-                            
-                        }
-                        else if(poseType == 'o') // meaning orientation constant came in
-                        {
-                            OriMsgIn = true;
-                            PosMsgIn = false;
-                        }
-                    }
-                    
-                }
-                // checking which axis to change is Z/Yaw
-                if(firstChar == '2')
-                {
-                    RollMsgIn = false;
-                    PitchMsgIn = false;
-                    YawMsgIn = true;
-                    // checking which constant is being changed
-                    char consType = msg[1];
-                    if(consType == 'P')
-                    {
-                        PMsgIn = true;
-                        IMsgIn = false;
-                        DMsgIn = false;
-                        // checking whether is orientation or location
-                        char poseType = msg[3];
-                        if(poseType == 'p') // meaning position constant came in
-                        {
-                            PosMsgIn = true;
-                            OriMsgIn = false;
-                            
-                        }
-                        else if(poseType == 'o') // meaning orientation constant came in
-                        {
-                            OriMsgIn = true;
-                            PosMsgIn = false;
-                        }
-                    }
-                    if(consType == 'I')
-                    {
-                        IMsgIn = true;
-                        PMsgIn = false;
-                        DMsgIn = false;
-                        // checking whether is orientation or location
-                        char poseType = msg[3];
-                        if(poseType == 'p') // meaning position constant came in
-                        {
-                            PosMsgIn = true;
-                            OriMsgIn = false;
-                            
-                        }
-                        else if(poseType == 'o') // meaning orientation constant came in
-                        {
-                            OriMsgIn = true;
-                            PosMsgIn = false;
-                        }
-                    }
-                    if(consType == 'D')
-                    {
-                        DMsgIn = true;
-                        IMsgIn = false;
-                        PMsgIn = false;
-                        // checking whether is orientation or location
-                        char poseType = msg[3];
-                        if(poseType == 'p') // meaning position constant came in
-                        {
-                            PosMsgIn = true;
-                            OriMsgIn = false;
-                            
-                        }
-                        else if(poseType == 'o') // meaning orientation constant came in
-                        {
-                            OriMsgIn = true;
-                            PosMsgIn = false;
-                        }
-                    }
-                    
-                }
-
-
-            }
-            // since not PID must be a destination new command
-            else
-            {
-                PMsgIn = false;
-                IMsgIn= false;
-                DMsgIn = false;
-                RollMsgIn = false;
-                PitchMsgIn = false;
-                YawMsgIn = false;
-                PosMsgIn = false;
-                OriMsgIn = false;
-                DestMsgIn = true;
-                
-            }
-            
-            
-            // set the value by type
-            if(PosMsgIn == true || OriMsgIn == true)
-            {
-                //pid val gets stored as string
-                pidVal = msg.substring(7);
-            }
-            else if(DestMsgIn == true)
-            {
-                // dest get stored
-            }
-        }
         
+        
+            if(msgInFlag == true)
+            {
+                String msg = mIn;
+                //Serial.print("incoming:");
+                //Serial.print(mIn);
+                //Serial.print(":");
+                //Serial.println(msg);
+                char firstChar = msg[0];// this can be either a number for PID change or Dest for change in destination
+                // checking if its a PID value
+                if(firstChar == '0' || firstChar == '1' || firstChar == '2')
+                {
+                    DestMsgIn = false;
+                    char axis = msg[0];
+                    // checking which axis to change is X/Roll
+                    if(firstChar == '0')
+                    {
+                        //Serial.println("Roll axis");
+                        RollMsgIn = true;
+                        PitchMsgIn = false;
+                        YawMsgIn = false;
+                        // checking which constant is being changed
+                        char consType = msg[1];
+                        if(consType == 'P')
+                        {
+                            //Serial.println("P constant");
+                            PMsgIn = true;
+                            IMsgIn = false;
+                            DMsgIn = false;
+                            // checking whether is orientation or location
+                            char poseType = msg[3];
+                            if(poseType == 'p') // meaning position constant came in
+                            {
+                                
+                                PosMsgIn = true;
+                                OriMsgIn = false;
+                                
+                            }
+                            else if(poseType == 'o') // meaning orientation constant came in
+                            {
+                                //Serial.println("orientation PID");
+                                OriMsgIn = true;
+                                PosMsgIn = false;
+                            }
+                        }
+                        if(consType == 'I')
+                        {
+                            IMsgIn = true;
+                            PMsgIn = false;
+                            DMsgIn = false;
+                            // checking whether is orientation or location
+                            char poseType = msg[3];
+                            if(poseType == 'p') // meaning position constant came in
+                            {
+                                PosMsgIn = true;
+                                OriMsgIn = false;
+                                
+                            }
+                            else if(poseType == 'o') // meaning orientation constant came in
+                            {
+                                OriMsgIn = true;
+                                PosMsgIn = false;
+                            }
+                        }
+                        if(consType == 'D')
+                        {
+                            DMsgIn = true;
+                            IMsgIn = false;
+                            PMsgIn = false;
+                            // checking whether is orientation or location
+                            char poseType = msg[3];
+                            if(poseType == 'p') // meaning position constant came in
+                            {
+                                PosMsgIn = true;
+                                OriMsgIn = false;
+                                
+                            }
+                            else if(poseType == 'o') // meaning orientation constant came in
+                            {
+                                OriMsgIn = true;
+                                PosMsgIn = false;
+                            }
+                        }
+                        
+                    }
+                    // checking which axis to change is Y/Pitch
+                    if(firstChar == '1')
+                    {
+                        RollMsgIn = false;
+                        PitchMsgIn = true;
+                        YawMsgIn = false;
+                        // checking which constant is being changed
+                        char consType = msg[1];
+                        if(consType == 'P')
+                        {
+                            PMsgIn = true;
+                            IMsgIn = false;
+                            DMsgIn = false;
+                            // checking whether is orientation or location
+                            char poseType = msg[3];
+                            if(poseType == 'p') // meaning position constant came in
+                            {
+                                PosMsgIn = true;
+                                OriMsgIn = false;
+                                
+                            }
+                            else if(poseType == 'o') // meaning orientation constant came in
+                            {
+                                OriMsgIn = true;
+                                PosMsgIn = false;
+                            }
+                        }
+                        if(consType == 'I')
+                        {
+                            IMsgIn = true;
+                            PMsgIn = false;
+                            DMsgIn = false;
+                            // checking whether is orientation or location
+                            char poseType = msg[3];
+                            if(poseType == 'p') // meaning position constant came in
+                            {
+                                PosMsgIn = true;
+                                OriMsgIn = false;
+                                
+                            }
+                            else if(poseType == 'o') // meaning orientation constant came in
+                            {
+                                OriMsgIn = true;
+                                PosMsgIn = false;
+                            }
+                        }
+                        if(consType == 'D')
+                        {
+                            DMsgIn = true;
+                            IMsgIn = false;
+                            PMsgIn = false;
+                            // checking whether is orientation or location
+                            char poseType = msg[3];
+                            if(poseType == 'p') // meaning position constant came in
+                            {
+                                PosMsgIn = true;
+                                OriMsgIn = false;
+                                
+                            }
+                            else if(poseType == 'o') // meaning orientation constant came in
+                            {
+                                OriMsgIn = true;
+                                PosMsgIn = false;
+                            }
+                        }
+                        
+                    }
+                    // checking which axis to change is Z/Yaw
+                    if(firstChar == '2')
+                    {
+                        RollMsgIn = false;
+                        PitchMsgIn = false;
+                        YawMsgIn = true;
+                        // checking which constant is being changed
+                        char consType = msg[1];
+                        if(consType == 'P')
+                        {
+                            PMsgIn = true;
+                            IMsgIn = false;
+                            DMsgIn = false;
+                            // checking whether is orientation or location
+                            char poseType = msg[3];
+                            if(poseType == 'p') // meaning position constant came in
+                            {
+                                PosMsgIn = true;
+                                OriMsgIn = false;
+                                
+                            }
+                            else if(poseType == 'o') // meaning orientation constant came in
+                            {
+                                OriMsgIn = true;
+                                PosMsgIn = false;
+                            }
+                        }
+                        if(consType == 'I')
+                        {
+                            IMsgIn = true;
+                            PMsgIn = false;
+                            DMsgIn = false;
+                            // checking whether is orientation or location
+                            char poseType = msg[3];
+                            if(poseType == 'p') // meaning position constant came in
+                            {
+                                PosMsgIn = true;
+                                OriMsgIn = false;
+                                
+                            }
+                            else if(poseType == 'o') // meaning orientation constant came in
+                            {
+                                OriMsgIn = true;
+                                PosMsgIn = false;
+                            }
+                        }
+                        if(consType == 'D')
+                        {
+                            DMsgIn = true;
+                            IMsgIn = false;
+                            PMsgIn = false;
+                            // checking whether is orientation or location
+                            char poseType = msg[3];
+                            if(poseType == 'p') // meaning position constant came in
+                            {
+                                PosMsgIn = true;
+                                OriMsgIn = false;
+                                
+                            }
+                            else if(poseType == 'o') // meaning orientation constant came in
+                            {
+                                OriMsgIn = true;
+                                PosMsgIn = false;
+                            }
+                        }
+                        
+                    }
+
+
+                }
+                // since not PID must be a destination new command
+                else if(firstChar == 'D')
+                {
+                    PMsgIn = false;
+                    IMsgIn= false;
+                    DMsgIn = false;
+                    RollMsgIn = false;
+                    PitchMsgIn = false;
+                    YawMsgIn = false;
+                    PosMsgIn = false;
+                    OriMsgIn = false;
+                    DestMsgIn = true;
+                    
+                }
+                
+                
+                // set the value by type
+                if(PosMsgIn == true || OriMsgIn == true)
+                {
+                    //pid val gets stored as string
+                    pidVal = msg.substring(7);
+                    //Serial.print("PID Value is:");
+                    //Serial.println(pidVal);
+                }
+                else if(DestMsgIn == true)
+                {
+                    // dest get stored
+                }
+            }
+        }
         
     }
     
@@ -491,11 +509,12 @@ class DroneCom
     {
         // checksum where sum is from frame type to end of rfdata
         //Serial.println("verifyIncoming: ");
-        for(int i = 0; i < header.length(); i++)
+        /*for(int i = 0; i < header.length(); i++)
         {
             Serial.print(header[i], HEX);
             Serial.print(" ");
-        }
+        }*/
+        //if(header.length() < 1){ return false; Serial.print("false message: ");}
         
         uint8_t sum = 0x00;
         //Serial.println("");
@@ -516,26 +535,25 @@ class DroneCom
         uint8_t frameType = header[2];
         if((header[header.length()-1]== checksum)&&(frameType == 0x90))// make sure both checksum and frametype agree
         {
-            return true;
             //Serial.println("true message");
+            return true;
+            
         }
-        else 
-        {
+        //else
+        //{
             msgInFlag = false;
             //Serial.print("false message: ");
             //Serial.println(frameType,HEX);
             return false;
-        }
+        //}
     }
-    
-    
     
     /**
      @brief :send orientation messages over xbee to coordinator
     */
     void sendOrientation(const double& roll, const double& pitch, const double& yaw)
     {
-        String msg = "Orientation: ";
+        String msg = "Orientation:";
         msg += roll;
         msg += " ";
         msg += pitch;
@@ -587,7 +605,8 @@ class DroneCom
     {
             uint8_t sum;       // nothing gained in using smaller types!
             for ( sum = 0 ; len != 0 ; len--)
-                    sum += *(buff++);   // parenthesis not required!
+                sum += *(buff++);   // parenthesis not required!
+        
             return (uint8_t)sum;
     }
     
@@ -635,58 +654,81 @@ class DroneCom
                     checking[i-3] = header[i];
         }
         sum = chksum8(checking, 14 + sizet);
-        uint8_t checksum = ((0xFF) - (sum)) +(0x02);
+    #ifdef COORDINATOR
+        uint8_t checksum = ((0xFF) - (sum))+(0x02);
+    #endif
+    #ifdef DRONE
+        uint8_t checksum = ((0xFF) - (sum));
+    #endif
         header[17+sizet]= (checksum);
         
         return header;
     }
-    
+ 
     /**
      @brief : parse headers that come in from in API mode. 
     */
     String rx_headerInter(String rx_message, unsigned int sizet)
     {
-            char buf[sizet];
-            rx_message.toCharArray(buf, sizet);//getBytes(buf, sizet);
-            /*Serial.print("incoming RX:");
-            for(int i = 0; i < sizet; i++)
-            {
-                Serial.print(buf[i], HEX);
-                Serial.print(" ");
-            }*/
-            //Serial.print('\t');
-            //Serial.print(rx_message);
-            
-            Serial.println("");//*/
-            const uint8_t dataLen = sizet - 12;// length of data in message
-            const uint8_t addLen = 8; // length of address
-
-            String out;
-            out = "";
-            //out.reserve(dataLen + addLen + 1);// = new char
-            /*
-            // parsing the address portion in the header
-            for(int i = 0; i < addLen; i++)
-            {
-                    out+= rx_message[i+3];
-            }
-            out += ':';//out[addLen] = ':';
-            // parsing the data portion of the header
-            for(int i = 0; i < dataLen; i++)
-            {
-                    out+= rx_message[i+10];//out[i + addLen] = rx_message[i+16];
-            }*/
-            //int total = dataLen + addLen;
-            //Serial.println(out);
+        char buf[sizet];
+        //Serial.print("beforeFilter incoming:");
+        //Serial.println(rx_message);
+        rx_message.toCharArray(buf, sizet);//getBytes(buf, sizet);
+        /*Serial.print("incoming RX:");
+        for(int i = 0; i < sizet; i++)
+        {
+            Serial.print(buf[i], HEX);
+            Serial.print(" ");
+        }*/
+        //Serial.print('\t');
+        //Serial.print(rx_message);
         
-            for(int i = 0; i < addLen + dataLen ; i++)
-            {
-                out += rx_message[i+3];
-            }
-            out[8] = ':';
-            return out;
+        //Serial.println("");//*/
+        #ifdef COORDINATOR
+        const uint8_t dataLen = sizet - 12;// length of data in message
+        const uint8_t addLen = 8; // length of address
+        String out;
+        out = "";
+        for(int i = 0; i < addLen + dataLen ; i++)
+        {
+            out += rx_message[i+3];
+        }
+        out[8] = ':';
+        
+        #endif
+        #ifdef DRONE
+        const uint8_t dataLen = sizet - 12;// length of data in message
+        String out;
+        out = "";
+        for(int i = 0; i < dataLen ; i++)
+        {
+            out += rx_message[i+10];
+        }
+
+        #endif
+        
+        //out.reserve(dataLen + addLen + 1);// = new char
+        /*
+        // parsing the address portion in the header
+        for(int i = 0; i < addLen; i++)
+        {
+                out+= rx_message[i+3];
+        }
+        out += ':';//out[addLen] = ':';
+        // parsing the data portion of the header
+        for(int i = 0; i < dataLen; i++)
+        {
+                out+= rx_message[i+10];//out[i + addLen] = rx_message[i+16];
+        }
+         */
+        //int total = dataLen + addLen;
+        //Serial.println(out);
+        
+        
+        return out;
         
     }
+   
 
 };
 
