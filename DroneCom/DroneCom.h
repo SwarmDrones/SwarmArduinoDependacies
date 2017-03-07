@@ -13,8 +13,8 @@
 #include <Arduino.h>
 
 #define PROCESSING
-//#define COORDINATOR
-#define DRONE
+#define COORDINATOR
+//#define DRONE
 //#define UNITY
 
 //#define SERIAL_COM
@@ -561,6 +561,21 @@ class DroneCom
         msg += yaw;
         transmit2Coor(msg);
     }
+    /**
+     @brief :send orientation messages over xbee to coordinator
+     */
+    void sendLocation(const uint8_t& surfaceQuality, const double& x_cm, const double& y_cm, const double& z_cm)
+    {
+        String msg = "Location:";
+        msg += x_cm;
+        msg += " ";
+        msg += y_cm;
+        msg += " ";
+        msg += z_cm;
+        msg += " ";
+        msg += surfaceQuality;
+        transmit2Coor(msg);
+    }
     
     /**
      @brief : send incoming to processing
@@ -673,17 +688,17 @@ class DroneCom
         char buf[sizet];
         //Serial.print("beforeFilter incoming:");
         //Serial.println(rx_message);
-        rx_message.toCharArray(buf, sizet);//getBytes(buf, sizet);
-        /*Serial.print("incoming RX:");
+        /*rx_message.toCharArray(buf, sizet);//getBytes(buf, sizet);
+        Serial.print("incoming RX:");
         for(int i = 0; i < sizet; i++)
         {
             Serial.print(buf[i], HEX);
             Serial.print(" ");
-        }*/
-        //Serial.print('\t');
-        //Serial.print(rx_message);
+        }
+        Serial.print('\t');
+        Serial.print(rx_message);
         
-        //Serial.println("");//*/
+        Serial.println("");//*/
         #ifdef COORDINATOR
         const uint8_t dataLen = sizet - 12;// length of data in message
         const uint8_t addLen = 8; // length of address
@@ -693,7 +708,7 @@ class DroneCom
         {
             out += rx_message[i+3];
         }
-        out[8] = ':';
+        out[7] = ':';
         
         #endif
         #ifdef DRONE
