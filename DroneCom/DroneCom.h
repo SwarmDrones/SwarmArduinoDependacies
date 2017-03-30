@@ -11,10 +11,13 @@
 #ifndef DroneCom_h
 #define DroneCom_h
 #include <Arduino.h>
+#include <SoftwareSerial.h>
 
+
+#define S_PORT Serial1
 #define PROCESSING
-#define COORDINATOR
-//#define DRONE
+//#define COORDINATOR
+#define DRONE
 //#define UNITY
 
 //#define SERIAL_COM
@@ -106,6 +109,8 @@ class DroneCom
     // strings to store the messages
     String pidVal; // P || I || D val
     String destVals; // x && y && x && r && p && y values
+    
+    //SoftwareSerial mySerial;
     #endif
     
     bool msgInFlag;
@@ -131,6 +136,8 @@ class DroneCom
         DestMsgIn = false;
         pidVal = "";
         destVals = "";
+        //SoftwareSerial temp(0,1);
+        //mySerial = temp;
         #endif
     }
     /**
@@ -138,10 +145,12 @@ class DroneCom
     */
     void init()
     {
+        
         Serial.begin(115200);
-        Serial1.begin(115200);
+        S_PORT.begin(115200);
         Serial.setTimeout(5);
-        Serial1.setTimeout(5);
+        S_PORT.setTimeout(5);
+       
     }
     
     /**
@@ -150,6 +159,8 @@ class DroneCom
     void transmit2Coor(String message)
     {
         messageOut = tx_headerGen(message, message.length());
+        
+        
         /*Serial.print("sending:");
         for(int i = 0; i < message.length()+18; i++)
         {
@@ -157,8 +168,10 @@ class DroneCom
             Serial.print(" ");
         }
         Serial.println("");*/
-        Serial1.write(messageOut, 18+message.length());
-        Serial1.flush();
+        S_PORT.flush();
+        S_PORT.write(messageOut, 18+message.length());
+        delete[] messageOut;
+        //S_PORT.flush();
     }
     
     #ifdef COORDINATOR
@@ -168,11 +181,12 @@ class DroneCom
     void updateRXMsg()
     {
         mIn = "";
-        Serial1.flush();
-        Serial.flush();
-        while(Serial1.available())
+        mIn.trim();
+        //S_PORT.flush();
+        //Serial.flush();
+        while(S_PORT.available())
         {
-            mIn += Serial1.readString();
+            mIn += S_PORT.readString();
         }
         
         //Serial.println(mIn);
@@ -197,11 +211,12 @@ class DroneCom
     void updateRXMsg()
     {
         mIn = "";
-        Serial1.flush();
+        mIn.trim();
+        //S_PORT.flush();
         //Serial.flush();
-        while(Serial1.available())
+        while(S_PORT.available())
         {
-            mIn += Serial1.readString();
+            mIn += S_PORT.readString();
         }
         
         
@@ -604,8 +619,9 @@ class DroneCom
             Serial.print(" ");
         }
         Serial.println("");*/
-        Serial1.write(messageOut, 18+message.length());
-        Serial1.flush();
+        S_PORT.write(messageOut, 18+message.length());
+        delete[] messageOut;
+        //S_PORT.flush();
     }
 
     
@@ -704,6 +720,7 @@ class DroneCom
         const uint8_t addLen = 8; // length of address
         String out;
         out = "";
+        //out.trim();
         for(int i = 0; i < addLen + dataLen ; i++)
         {
             out += rx_message[i+3];
