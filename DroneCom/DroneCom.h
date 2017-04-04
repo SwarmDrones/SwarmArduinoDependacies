@@ -4,8 +4,6 @@
         - outputs are defined based on using either wireless or serial communication.
  *   @author Ariel Feliz(aafeliz)
  *   @date 11/17/16
- *   @todo Create the wireless ouputs
- *   @todo Create m2m outputs on both serial and/or wireless sections
  */
 
 #ifndef DroneCom_h
@@ -103,11 +101,15 @@ class DroneCom
     bool YawMsgIn;
     bool PosMsgIn;
     bool OriMsgIn;
+    // coordinator sends new Throttle values to Drone
+    bool ThrottleMsgIn;
     // coordinator sends new Destination values to DRONE
     bool DestMsgIn;
     
+    
     // strings to store the messages
     String pidVal; // P || I || D val
+    String throttleVal; // throttle val
     String destVals; // x && y && x && r && p && y values
     
     //SoftwareSerial mySerial;
@@ -133,9 +135,15 @@ class DroneCom
         YawMsgIn = false;
         PosMsgIn = false;
         OriMsgIn = false;
+        
+        ThrottleMsgIn = false;
+        
         DestMsgIn = false;
+        
         pidVal = "";
+        throttleVal = "";
         destVals = "";
+        
         //SoftwareSerial temp(0,1);
         //mySerial = temp;
         #endif
@@ -223,15 +231,11 @@ class DroneCom
         if(mIn.length() > 0)
         {
             msgInFlag = verifyIncoming(mIn);
+        
+        
             if(msgInFlag == true)
             {
                 mIn = rx_headerInter(mIn, mIn.length());
-                //msgInFlag = true;
-            }
-        
-        
-            if(msgInFlag == true)
-            {
                 String msg = mIn;
                 //Serial.print("incoming:");
                 //Serial.print(mIn);
@@ -242,6 +246,7 @@ class DroneCom
                 if(firstChar == '0' || firstChar == '1' || firstChar == '2')
                 {
                     DestMsgIn = false;
+                    ThrottleMsgIn = false
                     char axis = msg[0];
                     // checking which axis to change is X/Roll
                     if(firstChar == '0')
@@ -451,7 +456,21 @@ class DroneCom
 
 
                 }
-                // since not PID must be a destination new command
+                // Throttle command
+                else if(firstChar == 'T')
+                {
+                    PMsgIn = false;
+                    IMsgIn= false;
+                    DMsgIn = false;
+                    RollMsgIn = false;
+                    PitchMsgIn = false;
+                    YawMsgIn = false;
+                    PosMsgIn = false;
+                    OriMsgIn = false;
+                    ThrottleMsgIn = true;
+                    DestMsgIn = false;
+                }
+                //  destination new command
                 else if(firstChar == 'D')
                 {
                     PMsgIn = false;
@@ -462,8 +481,8 @@ class DroneCom
                     YawMsgIn = false;
                     PosMsgIn = false;
                     OriMsgIn = false;
+                    ThrottleMsgIn = false;
                     DestMsgIn = true;
-                    
                 }
                 
                 
@@ -474,6 +493,11 @@ class DroneCom
                     pidVal = msg.substring(7);
                     //Serial.print("PID Value is:");
                     //Serial.println(pidVal);
+                }
+                // storing the throttle message that came in
+                else if(ThrottleMsgIn == true)
+                {
+                    throttleVal = msg.substring(9);
                 }
                 else if(DestMsgIn == true)
                 {
@@ -501,6 +525,11 @@ class DroneCom
     {
         resetFlags();
         return pidVal;
+    }
+    String getThrottleMsgVal()
+    {
+        resetFlags();
+        return throttleVal;
     }
     String getDestMsgVals()
     {

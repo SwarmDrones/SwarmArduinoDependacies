@@ -31,7 +31,7 @@ public:
     }
     void enable()
     {
-        analogWrite(pin, 10);
+        analogWrite(pin, 117);//10);
         delay(4000);
     }
     void setSpeed(float _speed)
